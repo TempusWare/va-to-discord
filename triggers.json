@@ -1,0 +1,4 @@
+{
+    "kill": "kill player_name",
+    "creeper": "mob creeper 1 player_name"
+}
