@@ -1,9 +1,9 @@
 const chokidar = require('chokidar');
 var fs = require('fs');
 const { Client, Events, GatewayIntentBits } = require('discord.js');
-const { token, consoleChannel, generalChannel, playerName } = require('./config.json');
-const triggers = require('./triggers.json');
+const { token, consoleChannel, playerName } = require('./config.json');
 const mobs = require('./mobs.json');
+const entities = require('./entities.json');
 
 const vaOutPath = "./readfromme.txt"
 
@@ -40,22 +40,39 @@ watcher.on('change', (event, path) => {
 
         let commands = []
 
-        commands.push(`say ${playerName} said ${word}`)
+        // commands.push(`say ${playerName} said ${word}`)
+        commands.push(`tellraw @a {"text": "${playerName} said ${word}", "color": "gray"}`)
         
         let validTrigger = true
 
         switch (trigger) {
-            case "kill":
+            case "kill": {
                 commands.push(`kill ${playerName}`)
-                break;
+            } break;
             case "mob":
-                let mob = getRandomMob()
+            case "entity": { // Entities include all entities (boats, armour stands); not just creatures
+                let mob = getRandomMob(trigger)
                 commands.push(`spawnmob ${mob} 1 ${playerName}`)
-                commands.push(`say Spawning ${mob}`)
-                break;
-            default:
+                // commands.push(`say Spawning ${mob}`)
+                commands.push(`tellraw @a {"text": "Spawning ${mob}", "color": "blue"}`)
+            } break;
+            case "mobs":
+            case "entities": { // Entities include all entities (boats, armour stands); not just creatures
+                let mob = getRandomMob(trigger)
+                let amount = Math.round(Math.random() * 9 + 1)
+                commands.push(`spawnmob ${mob} ${amount} ${playerName}`)
+                // commands.push(`say Spawning ${amount} ${mob}${amount > 1 ? "s" : ""}`)
+                commands.push(`tellraw @a {"text": "Spawning ${amount} ${mob}${amount > 1 ? "s" : ""}", "color": "blue"}`)
+                } break;
+            case "bees": {
+                let mob = "bee"
+                let amount = 36
+                commands.push(`spawnmob ${mob} ${amount} ${playerName}`)
+                commands.push(`tellraw @a {"text": "Spawning bees", "color": "yellow"}`)
+            } break;
+            default: {
                 validTrigger = false
-                break;
+            } break;
         }
 
         if (!validTrigger) return console.log(`Not a defined trigger: ${trigger}`)
@@ -72,27 +89,10 @@ function sendToChannel(channelID, messages) {
     .catch(console.error)
 }
 
-function getCommands(t) {
-    var messages = []
-
-    const trigger = triggers[t]
-    var command = trigger.replace(/player_name/g, playerName)
-    messages.push(command)
-    messages.push(`say ${playerName} said ${word}`)
-
-    if (t === "mob") {
-        const mob = getRandomMob()
-        command = command.replace(/mob_name/g, mob)
-
-        messages.push(`say Spawning ${mob}`)
-    }
-
-    return messages
-}
-
-function getRandomMob() {
-    const rand = Math.floor(Math.random() * mobs.length)
-    return mobs[rand]
+function getRandomMob(type) {
+    const list = type === "mob" || type === "mobs" ? mobs : entities
+    const rand = Math.floor(Math.random() * list.length)
+    return list[rand]
 }
 
 client.login(token);
